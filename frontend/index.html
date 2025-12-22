@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Test Generator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { text-align: center; color: white; margin-bottom: 30px; }
+        h1 { font-size: 2.3em; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .tagline { font-size: 1em; opacity: 0.9; }
+        .main-content {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        .card h2 { margin-bottom: 16px; color: #222; }
+        textarea {
+            width: 100%;
+            height: 230px;
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            font-size: 14px;
+            resize: vertical;
+        }
+        textarea:focus { outline: none; border-color: #667eea; }
+        .controls { margin-top: 14px; }
+        label { font-size: 13px; font-weight: 600; color: #444; display: block; margin-bottom: 6px; }
+        select, input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            font-size: 13px;
+        }
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        button {
+            padding: 10px 16px;
+            border-radius: 999px;
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-secondary { background: #f0f0f0; color: #333; }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #ccc;
+            color: #444;
+        }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .status-line { font-size: 13px; color: #555; margin-top: 10px; }
+        .status-ok { color: #2e7d32; }
+        .status-bad { color: #c62828; }
+
+        .results { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .results-header h2 { margin: 0; }
+        .filters { display: flex; gap: 10px; align-items: center; font-size: 13px; }
+        .filter-badge {
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .filter-badge.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .stats {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            font-size: 13px;
+        }
+        .stat-number { font-size: 18px; font-weight: 700; color: #667eea; }
+        .stat-label { text-transform: uppercase; font-size: 11px; color: #777; }
+
+        .test-case {
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            background: #fafafa;
+        }
+        .test-case-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .id-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .test-id {
+            background: #667eea;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .type-badge {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+        .type-functional { background: #e3f2fd; color: #1976d2; }
+        .type-boundary { background: #fff3e0; color: #f57c00; }
+        .type-negative { background: #fce4ec; color: #c2185b; }
+
+        .priority-badge {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 700;
+        }
+        .pri-high { background: #ffebee; color: #c62828; }
+        .pri-medium { background: #fff8e1; color: #f9a825; }
+        .pri-low { background: #e8f5e9; color: #2e7d32; }
+
+        .test-case h3 { font-size: 15px; margin: 4px 0 10px 0; }
+        .test-detail { margin-bottom: 8px; }
+        .detail-label { font-size: 11px; text-transform: uppercase; color: #777; margin-bottom: 3px; }
+        .detail-content { font-size: 13px; color: #333; }
+        .steps-list { list-style: none; padding-left: 0; }
+        .steps-list li { padding-left: 18px; position: relative; margin-bottom: 4px; }
+        .steps-list li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .error { background: #ffebee; border: 1px solid #e57373; color: #c62828; padding: 10px; border-radius: 8px; margin-bottom: 12px; }
+        .success { background: #e8f5e9; border: 1px solid #81c784; color: #2e7d32; padding: 10px; border-radius: 8px; margin-bottom: 12px; }
+
+        /* Simple modal for Gherkin */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+        }
+        .modal {
+            background: #1e1e1e;
+            color: #eee;
+            padding: 18px;
+            border-radius: 10px;
+            width: min(90%, 800px);
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal pre {
+            background: #000;
+            padding: 10px;
+            border-radius: 6px;
+            overflow: auto;
+            font-size: 12px;
+        }
+        .badge-small {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #424242;
+        }
+
+        @media (max-width: 900px) {
+            .main-content { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Test Generator</h1>
+            <p class="tagline">Convert requirements to test cases with AI (now with priority & BDD)</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Left: Input -->
+            <div class="card">
+                <h2>Requirements</h2>
+                <textarea id="requirementsInput" placeholder="Paste requirements here...
+
+Tips:
+- You can paste multiple features separated by headings.
+- Example:
+  Feature: Login
+  ...
+  Feature: Checkout
+  ..."></textarea>
+
+                <div class="controls" style="margin-top: 12px;">
+                    <label for="requirementsFile">Upload .txt file (optional)</label>
+                    <input type="file" id="requirementsFile" accept=".txt">
+                </div>
+
+                <div class="controls">
+                    <label for="testType">Test Type</label>
+                    <select id="testType">
+                        <option value="functional">Functional Tests (Happy path)</option>
+                        <option value="comprehensive">Comprehensive (Functional + Boundary + Negative)</option>
+                        <option value="boundary">Boundary Tests Only</option>
+                    </select>
+                </div>
+
+                <div class="button-row">
+                    <button class="btn-primary" id="btnGenerate" onclick="generateTests(false)">Generate Tests</button>
+                    <button class="btn-primary" id="btnGeneratePriority" onclick="generateTests(true)">Generate with Priority</button>
+                    <button class="btn-outline" onclick="generateGherkin()">Generate BDD (Gherkin)</button>
+                    <button class="btn-secondary" onclick="clearAll()">Clear</button>
+                </div>
+                <div class="status-line" id="inputHint">
+                    You can upload a .txt file or paste requirements manually.
+                </div>
+            </div>
+
+            <!-- Right: Status -->
+            <div class="card">
+                <h2>Status</h2>
+                <div id="statusBox" style="background:#f7f7f7;border-radius:10px;padding:16px;min-height:130px;display:flex;flex-direction:column;justify-content:center;gap:6px;">
+                    <div>⏳ Checking API...</div>
+                    <div id="statusApi" class="status-line"></div>
+                    <div id="statusInfo" class="status-line"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="results">
+            <div class="results-header">
+                <h2>Test Cases</h2>
+                <div class="filters">
+                    <span style="font-size:12px;color:#666;">Filter by priority:</span>
+                    <button class="filter-badge active" data-pri="all" onclick="setPriorityFilter('all', this)">All</button>
+                    <button class="filter-badge" data-pri="High" onclick="setPriorityFilter('High', this)">High</button>
+                    <button class="filter-badge" data-pri="Medium" onclick="setPriorityFilter('Medium', this)">Medium</button>
+                    <button class="filter-badge" data-pri="Low" onclick="setPriorityFilter('Low', this)">Low</button>
+                </div>
+            </div>
+            <div id="resultsContainer">
+                <p style="color:#999;text-align:center;padding:40px;">Generate test cases to see results</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gherkin modal -->
+    <div id="gherkinModalBackdrop" class="modal-backdrop">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <strong>Generated Gherkin Scenarios</strong>
+                    <span class="badge-small">.feature</span>
+                </div>
+                <button class="btn-secondary" onclick="closeGherkinModal()">Close</button>
+            </div>
+            <div>
+                <button class="btn-primary" style="margin-bottom:8px;" onclick="copyGherkin()">Copy to clipboard</button>
+            </div>
+            <pre id="gherkinContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+
+        let currentTests = [];
+        let priorityFilter = "all";
+        let lastGherkin = "";
+
+        // ----- Init -----
+        window.addEventListener("DOMContentLoaded", () => {
+            checkAPIConnection();
+
+            const fileInput = document.getElementById("requirementsFile");
+            fileInput.addEventListener("change", handleFileUpload);
+        });
+
+        async function checkAPIConnection() {
+            try {
+                const res = await fetch(`${API_URL}/health`);
+                const data = await res.json();
+                if (data.status === "ok") {
+                    document.getElementById("statusApi").innerHTML = "✅ API Connected";
+                } else {
+                    document.getElementById("statusApi").innerHTML = '<span class="status-bad">⚠️ API responded but not healthy</span>';
+                }
+            } catch (e) {
+                document.getElementById("statusApi").innerHTML = '<span class="status-bad">❌ API Not Connected – make sure backend is running on port 8000</span>';
+            }
+        }
+
+        // ----- File upload -----
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!file.name.toLowerCase().endsWith(".txt")) {
+                alert("Only .txt files are supported in this version.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                document.getElementById("requirementsInput").value = e.target.result;
+                document.getElementById("inputHint").textContent = `Loaded requirements from file: ${file.name}`;
+            };
+            reader.readAsText(file);
+        }
+
+        // ----- Generate tests -----
+        async function generateTests(withPriority) {
+            const requirements = document.getElementById("requirementsInput").value.trim();
+            const testType = document.getElementById("testType").value;
+            if (!requirements) {
+                showError("Please enter or upload requirements first.");
+                return;
+            }
+
+            const btn = document.getElementById(withPriority ? "btnGeneratePriority" : "btnGenerate");
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = withPriority ? "Generating with priority..." : "Generating...";
+
+            try {
+                const endpoint = withPriority ? "/generate-tests-priority" : "/generate-tests";
+                document.getElementById("statusInfo").textContent = withPriority
+                    ? "Calling API to generate tests with risk-based priority..."
+                    : "Calling API to generate tests...";
+
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ requirements, test_type: testType })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.detail || `API error (${response.status})`);
+                }
+
+                const data = await response.json();
+                currentTests = data.test_cases || [];
+                renderTestCases();
+                showSuccess(`Generated ${data.count} test cases${withPriority ? " with priority" : ""}.`);
+                document.getElementById("statusInfo").textContent = "Generation complete.";
+            } catch (e) {
+                console.error(e);
+                showError(e.message);
+                document.getElementById("statusInfo").textContent = "Error during generation.";
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        // ----- Render tests with filter & stats -----
+        function renderTestCases() {
+            const container = document.getElementById("resultsContainer");
+            if (!currentTests || currentTests.length === 0) {
+                container.innerHTML = '<p style="color:#999;text-align:center;padding:40px;">No test cases generated yet.</p>';
+                return;
+            }
+
+            const filtered = currentTests.filter(tc => {
+                if (!tc.priority || priorityFilter === "all") return true;
+                return tc.priority === priorityFilter;
+            });
+
+            const total = currentTests.length;
+            const functionalCount = currentTests.filter(t => t.test_type === "functional").length;
+            const boundaryCount = currentTests.filter(t => t.test_type === "boundary").length;
+            const negativeCount = currentTests.filter(t => t.test_type === "negative").length;
+            const highCount = currentTests.filter(t => t.priority === "High").length;
+            const mediumCount = currentTests.filter(t => t.priority === "Medium").length;
+            const lowCount = currentTests.filter(t => t.priority === "Low").length;
+
+            let html = `
+                <div class="stats">
+                    <div class="stats-grid">
+                        <div>
+                            <div class="stat-number">${total}</div>
+                            <div class="stat-label">Total Tests</div>
+                        </div>
+                        <div>
+                            <div class="stat-number">${functionalCount}</div>
+                            <div class="stat-label">Functional</div>
+                        </div>
+                        <div>
+                            <div class="stat-number">${boundaryCount + negativeCount}</div>
+                            <div class="stat-label">Edge / Negative</div>
+                        </div>
+                        <div>
+                            <div class="stat-number">${highCount}/${mediumCount}/${lowCount}</div>
+                            <div class="stat-label">High / Med / Low</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            if (filtered.length === 0) {
+                html += '<p style="color:#999;text-align:center;padding:20px;">No tests match this priority filter.</p>';
+            }
+
+            filtered.forEach((tc, idx) => {
+                const pri = (tc.priority || "").toLowerCase();
+                html += `
+                    <div class="test-case">
+                        <div class="test-case-header">
+                            <div class="id-badges">
+                                <span class="test-id">${tc.id || "TC" + (idx + 1)}</span>
+                                <span class="type-badge ${typeClass(tc.test_type)}">${(tc.test_type || "functional").toUpperCase()}</span>
+                                ${
+                                    tc.priority
+                                        ? `<span class="priority-badge ${priorityClass(pri)}">${tc.priority}</span>`
+                                        : ""
+                                }
+                            </div>
+                        </div>
+                        <h3>${tc.title || "Test Case " + (idx + 1)}</h3>
+                        <div class="test-detail">
+                            <div class="detail-label">Preconditions</div>
+                            <div class="detail-content">${tc.preconditions || "N/A"}</div>
+                        </div>
+                        <div class="test-detail">
+                            <div class="detail-label">Steps</div>
+                            <ul class="steps-list">
+                                ${
+                                    (tc.steps && tc.steps.length)
+                                        ? tc.steps.map(s => `<li>${s}</li>`).join("")
+                                        : "<li>N/A</li>"
+                                }
+                            </ul>
+                        </div>
+                        <div class="test-detail">
+                            <div class="detail-label">Expected Result</div>
+                            <div class="detail-content">${tc.expected_result || "N/A"}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function typeClass(t) {
+            const tt = (t || "").toLowerCase();
+            if (tt === "boundary") return "type-boundary";
+            if (tt === "negative") return "type-negative";
+            return "type-functional";
+        }
+        function priorityClass(p) {
+            if (p === "high") return "pri-high";
+            if (p === "low") return "pri-low";
+            return "pri-medium";
+        }
+
+        function setPriorityFilter(pri, btn) {
+            priorityFilter = pri;
+            document.querySelectorAll(".filter-badge").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            renderTestCases();
+        }
+
+        // ----- Gherkin generation -----
+        async function generateGherkin() {
+            const requirements = document.getElementById("requirementsInput").value.trim();
+            if (!requirements) {
+                showError("Please enter or upload requirements first.");
+                return;
+            }
+
+            document.getElementById("statusInfo").textContent = "Generating BDD (Gherkin) scenarios...";
+            try {
+                const res = await fetch(`${API_URL}/generate-tests-gherkin`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ requirements, test_type: "functional" })
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.detail || `API error (${res.status})`);
+                }
+                const data = await res.json();
+                lastGherkin = data.gherkin || "";
+                openGherkinModal(lastGherkin);
+                document.getElementById("statusInfo").textContent = "Gherkin generation complete.";
+            } catch (e) {
+                console.error(e);
+                showError(e.message);
+                document.getElementById("statusInfo").textContent = "Error generating Gherkin.";
+            }
+        }
+
+        function openGherkinModal(text) {
+            document.getElementById("gherkinContent").textContent = text || "No content.";
+            document.getElementById("gherkinModalBackdrop").style.display = "flex";
+        }
+        function closeGherkinModal() {
+            document.getElementById("gherkinModalBackdrop").style.display = "none";
+        }
+        async function copyGherkin() {
+            try {
+                await navigator.clipboard.writeText(lastGherkin || document.getElementById("gherkinContent").textContent);
+                alert(".feature content copied to clipboard.");
+            } catch (e) {
+                alert("Could not copy to clipboard.");
+            }
+        }
+
+        // ----- Helpers -----
+        function showError(msg) {
+            const c = document.getElementById("resultsContainer");
+            c.innerHTML = `<div class="error">${msg}</div>`;
+        }
+        function showSuccess(msg) {
+            const c = document.getElementById("resultsContainer");
+            const div = document.createElement("div");
+            div.className = "success";
+            div.textContent = msg;
+            c.insertBefore(div, c.firstChild);
+            setTimeout(() => div.remove(), 3000);
+        }
+        function clearAll() {
+            document.getElementById("requirementsInput").value = "";
+            document.getElementById("requirementsFile").value = "";
+            document.getElementById("resultsContainer").innerHTML =
+                '<p style="color:#999;text-align:center;padding:40px;">Generate test cases to see results</p>';
+            currentTests = [];
+            document.getElementById("statusInfo").textContent = "";
+            priorityFilter = "all";
+            document.querySelectorAll(".filter-badge").forEach(b => b.classList.remove("active"));
+            document.querySelector('.filter-badge[data-pri="all"]').classList.add("active");
+        }
+    </script>
+</body>
+</html>
